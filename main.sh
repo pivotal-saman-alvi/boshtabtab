@@ -162,7 +162,9 @@ function _boshness() {
   elif [[ ${prev} == back-up ]]; then
     COMPREPLY=( $(compgen -W "${back_up_options}" -- ${cur}) )
     return 0
-  elif [[ (${prev} == -d) || (${prev} == --deployment) ]]; then
+  elif [[ (${prev} == -d) || \
+	  (${prev} == --deployment) || \
+	  (${prev} == delete-deployment)]]; then
     COMPREPLY=( $(compgen -W "`__getDeployments`" -- ${cur}) )
     return 0
   elif [[ ${prev} == -e ]]; then
@@ -174,16 +176,16 @@ function _boshness() {
   elif [[ (${prev} == update-cloud-config) || \
 	  (${prev} == update-runtime-config) || \
 	  (${prev} == update-cpi-config) ]]; then
-		COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
     return 0
   elif [[ (${prev} == delete-release) ]]; then
 
-		COMPREPLY=( $(compgen -W "`__getReleases`" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "`__getReleases`" -- ${cur}) )
     return 0
   elif [[ (${prev} == ssh) || \
 	  (${prev} == start) || \
 	  (${prev} == stop) ]]; then
-		COMPREPLY=( $(compgen -W "`__getVMs`" -- ${cur}) )
+    COMPREPLY=( $(compgen -W "`__getVMs`" -- ${cur}) )
     return 0
   fi
 }
