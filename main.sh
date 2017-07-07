@@ -2,15 +2,15 @@
 __getIndexInCurrentWords() {
   WORD=$1
 
-  for i in "${!COMP_WORDS[@]}"; do
-     if [[ "${COMP_WORDS[$i]}" = "${WORD}" ]]; then
+  for i in "${!WORD_ITEMS[@]}"; do
+     if [[ "${WORD_ITEMS[$i]}" == "${WORD}" ]]; then
          echo ${i}
          return 0
      fi
   done
 
   echo "not found"
-  return 1
+  return 0
 }
 
 __getYMLFiles() {
@@ -25,9 +25,9 @@ __getArchiveFiles() {
 
 __getValueSetInKeyVal() {
   WORD=$1
-  for i in "${!COMP_WORDS[@]}"; do
-     if [[ "${COMP_WORDS[$i]}" == *"${WORD}"* ]]; then
-        IFS='=' read -ra KEYVALUE <<< "${COMP_WORDS[$i]}"
+  for i in "${!WORD_ITEMS[@]}"; do
+     if [[ "${WORD_ITEMS[$i]}" == *"${WORD}"* ]]; then
+        IFS='=' read -ra KEYVALUE <<< "${WORD_ITEMS[$i]}"
 
         if [[ "${#KEYVALUE[@]}" == 2 ]]; then
           echo "${KEYVALUE[1]}"
@@ -105,14 +105,9 @@ __getDeployment() {
   fi
 }
 
-# get environment from -e flag
-# if it is not in -e flag
-# get it from environment variable
-# if it is not there, then return an error
 __getEnvironment() {
   envFlagIndex=$(__getIndexInCurrentWords "-e")
   environmentFlag=$(__getValueSetInKeyVal "--environment=")
-
 
   if [[ ("${envFlagIndex}" == "not found") && ("${environmentFlag}" == "not found") ]]; then
     if [ "${BOSH_ENVIRONMENT}" == "" ]; then
@@ -149,14 +144,53 @@ __getVMs() {
   return 0
 }
 
+__removeEnvironmentFromCommands() {
+  ENV_INDEX=$(__getIndexInCurrentWords "${ENVIRONMENT}")
+
+  if [[ "${ENVIRONMENT}" == *"--environment"* ]]; then
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX} ${WORD_ITEMS[@]:$(($ENV_INDEX + 1))})
+    COMP_CWORD=${COMP_CWORD}-1
+
+    echo "${WORD_ITEMS[@]}"
+    return 0
+  else 
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX} ${WORD_ITEMS[@]:$(($ENV_INDEX + 1))})
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX - 1} ${WORD_ITEMS[@]:$(($ENV_INDEX))})
+    COMP_CWORD=${COMP_CWORD}-2
+
+    echo "${WORD_ITEMS[@]}"
+    return 0
+  fi
+}
+
+__removeDeploymentFromCommands() {
+  DEP_INDEX=$(__getIndexInCurrentWords "${DEPLOYMENT}")
+
+  if [[ "${DEPLOYMENT}" == *"--deployment"* ]]; then
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX} ${WORD_ITEMS[@]:$(($ENV_INDEX + 1))})
+    COMP_CWORD=${COMP_CWORD}-1
+
+    echo "${WORD_ITEMS[@]}"
+    return 0
+  else 
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX} ${WORD_ITEMS[@]:$(($ENV_INDEX + 1))})
+    WORD_ITEMS=(${WORD_ITEMS[@]:0:$ENV_INDEX - 1} ${WORD_ITEMS[@]:$(($ENV_INDEX))})
+    COMP_CWORD=${COMP_CWORD}-2
+
+    echo "${WORD_ITEMS[@]}"
+    return 0
+  fi
+}
+
 function _boshness() {
-  local main_options="-xx -e add-blob alias-env attach-disk back-up blobs cancel-task clean-up cloud-check 
+  local main_options="-e add-blob alias-env attach-disk back-up blobs cancel-task clean-up cloud-check 
   cloud-config cpi-config create-env create-release delete-deployment delete-disk delete-env delete-release 
   delete-snapshot delete-snapshots delete-stemcell delete-vm deploy deployment deployments disks environment 
   environments envs errands events export-release finalize-release generate-job generate-package help ignore
   init-release inspect-release instances interpolate locks log-in log-out logs manifest recreate releases remove-blob
   reset-release restart run-errand runtime-config scp snapshots ssh start stemcells stop sync-blobs take-snapshot task
-  tasks unignore update-cloud-config update-cpi-config update-resurrection update-runtime-config upload-blobs upload-release upload-stemcell variables vms"
+  tasks unignore update-cloud-config update-cpi-config update-resurrection update-runtime-config upload-blobs upload-release
+  upload-stemcell variables vms"
   local no_options=""
   local back_up_options="--force"
   local just_dir_options="--dir"
@@ -165,11 +199,23 @@ function _boshness() {
   local cur prev opts
 
   COMPREPLY=()
-  cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+  WORD_ITEMS=( "${COMP_WORDS[@]}" )
+
+  ENVIRONMENT=$(__getEnvironment)
+  if [[ ${ENVIRONMENT} != "error not set" ]]; then
+    __removeEnvironmentFromCommands "${ENVIRONMENT}"
+  fi
 
   DEPLOYMENT=$(__getDeployment)
-  ENVIRONMENT=$(__getEnvironment)
+  if [[ ${DEPLOYMENT} != "error not set" ]]; then
+    __removeDeploymentFromCommands "${DEPLOYMENT}"
+  fi
+
+  cur="${WORD_ITEMS[COMP_CWORD]}"
+  prev="${WORD_ITEMS[COMP_CWORD-1]}"
+
+
   if [[ ${prev} == bosh ]]; then
     if [[ ${cur} == * ]] ; then
       COMPREPLY=( $(compgen -W "${main_options[@]} ${all_options[@]}" -- ${cur}) )
