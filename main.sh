@@ -1,3 +1,38 @@
+
+__getIndexInCurrentWords() {
+  WORD=$1
+
+  for i in "${!COMP_WORDS[@]}"; do
+     if [[ "${COMP_WORDS[$i]}" = "${WORD}" ]]; then
+         echo ${i}
+         return 0
+     fi
+  done
+
+  echo "not found"
+  return 1
+}
+
+__getValueSetInKeyVal() {
+  WORD=$1
+  for i in "${!COMP_WORDS[@]}"; do
+     if [[ "${COMP_WORDS[$i]}" == *"${WORD}"* ]]; then
+        IFS='=' read -ra KEYVALUE <<< "${COMP_WORDS[$i]}"
+
+        if [[ "${#KEYVALUE[@]}" == 2 ]]; then
+          echo "${KEYVALUE[1]}"
+          return 0
+        else
+          echo "value not set"
+          return 1
+        fi
+     fi
+  done
+
+  echo "not found"
+  return 1
+}
+
 __getEnvs() {
   # results=`eval "bosh envs --json | jq -r '.Tables[0].Rows[][1]' | tr '\n' ' '"`
   results=`eval "cat blah | jq -r '.Tables[0].Rows[][1]' | tr '\n' ' '"`
@@ -28,13 +63,50 @@ __getReleases() {
 }
 
 __getDeployment() {
-  echo ${BOSH_DEPLOYMENT}
-  return 0
+  depFlagIndex=$(__getIndexInCurrentWords "-d")
+  deploymentFlag=$(__getValueSetInKeyVal "--deployment=")
+
+  if [[ ("${depFlagIndex}" == "not found") && ("${deploymentFlag}" == "not found") ]]; then
+    if [ "${BOSH_DEPLOYMENT}" == "" ]; then
+      echo "error not set"
+      return 1;
+    else 
+      echo "${BOSH_DEPLOYMENT}"
+      return 0;
+    fi
+  elif [[ ("${depFlagIndex}" == "not found") ]]; then
+    echo "${deploymentFlag}"
+    return 0
+  else
+    echo "${COMP_WORDS[depFlagIndex + 1]}"
+    return 0
+  fi
 }
 
+# get environment from -e flag
+# if it is not in -e flag
+# get it from environment variable
+# if it is not there, then return an error
 __getEnvironment() {
-  echo ${BOSH_ENVIRONMENT}
-  return 0
+  envFlagIndex=$(__getIndexInCurrentWords "-e")
+  environmentFlag=$(__getValueSetInKeyVal "--environment=")
+
+
+  if [[ ("${envFlagIndex}" == "not found") && ("${environmentFlag}" == "not found") ]]; then
+    if [ "${BOSH_ENVIRONMENT}" == "" ]; then
+      echo "error not set"
+      return 1;
+    else 
+      echo "${BOSH_ENVIRONMENT}"
+      return 0;
+    fi
+  elif [[ ("${envFlagIndex}" == "not found") ]]; then
+    echo "${environmentFlag}"
+    return 0
+  else
+    echo "${COMP_WORDS[envFlagIndex + 1]}"
+    return 0
+  fi
 }
 
 __allFiles() {
