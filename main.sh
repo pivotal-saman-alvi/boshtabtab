@@ -17,6 +17,12 @@ __getYMLFiles() {
   echo $(find * -type f -name "*.yml" 2> /dev/null)
   return 0
 }
+
+__getArchiveFiles() {
+  echo $(find * -type f -name "*.tgz" -o -name "*.gz" -o -name "*.tar" -o -name "*.gzip" -o -name "*.zip" 2> /dev/null)
+  return 0
+}
+
 __getValueSetInKeyVal() {
   WORD=$1
   for i in "${!COMP_WORDS[@]}"; do
@@ -182,6 +188,9 @@ function _boshness() {
     return 0
   elif [[ ${prev} == -xx ]]; then
     COMPREPLY=( $(compgen -W "`__allDirs`" -- ${cur}) )
+    return 0
+  elif [[ ${prev} == upload-stemcell ]]; then
+    COMPREPLY=( $(compgen -W "`__getArchiveFiles`" -- ${cur}) )
     return 0
   elif [[ (${prev} == update-cloud-config) || \
 	  (${prev} == update-runtime-config) || \
