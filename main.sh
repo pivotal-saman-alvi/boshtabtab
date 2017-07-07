@@ -21,6 +21,12 @@ __getDeployments() {
   return 0
 }
 
+__getReleases() {
+  results=$(bosh -e ${ENVIRONMENT} releases --column=name --column==version --json | jq -r '.Tables[0].Rows[] | .name+"/"+.version' 2> /dev/null)
+  echo ${results}
+  return 0
+}
+
 __getDeployment() {
   echo ${BOSH_DEPLOYMENT}
   return 0
@@ -97,6 +103,10 @@ function _boshness() {
 	  (${prev} == update-runtime-config) || \
 	  (${prev} == update-cpi-config) ]]; then
 		COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
+    return 0
+  elif [[ (${prev} == delete-release) ]]; then
+
+		COMPREPLY=( $(compgen -W "`__getReleases`" -- ${cur}) )
     return 0
   elif [[ (${prev} == ssh) || \
 	  (${prev} == start) || \
