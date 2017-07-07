@@ -6,18 +6,30 @@ __getEnvs() {
   return 0
 }
 
+__getColumnValues() {
+  json=$1
+  colname=$2
+  results=$(echo ${json} | jq .Tables[0].Rows[].${colname} 2> /dev/null)
+  echo ${results}
+  return 0
+}
+
 __getDeployments() {
-  results=`eval "bosh deployments --json | jq .Tables[0].Rows | jq -r '.[] | select(.name) | .name'"`
+  environment=$(__getEnvironment)
+  json=$(bosh -e ${environment} deployments --json 2> /dev/null)
+  results=$(__getColumnValues "${json}" name 2> /dev/null)
   echo ${results}
   return 0
 }
 
 __getDeployment() {
-  return $BOSH_DEPLOYMENT
+  echo ${BOSH_DEPLOYMENT}
+  return 0
 }
 
 __getEnvironment() {
-  return $BOSH_ENVIRONMENT
+  echo ${BOSH_ENVIRONMENT}
+  return 0
 }
 
 __allFiles() {
@@ -80,8 +92,8 @@ function _boshness() {
     COMPREPLY=( $(compgen -W "`__allDirs`" -- ${cur}) )
     return 0
   elif [[ (${prev} == update-cloud-config) || \
-	 				(${prev} == update-runtime-config) || \
-	 				(${prev} == update-cpi-config) ]]; then
+	  (${prev} == update-runtime-config) || \
+	  (${prev} == update-cpi-config) ]]; then
 		COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
     return 0
   fi
