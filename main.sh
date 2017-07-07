@@ -192,7 +192,9 @@ function _boshness() {
     return 0
   elif [[ (${prev} == ssh) || \
 	  (${prev} == start) || \
-	  (${prev} == stop) ]]; then
+	  (${prev} == stop) || \
+	  (${prev} == unignore) || \
+	  (${prev} == ignore) ]]; then
     COMPREPLY=( $(compgen -W "`__getVMs`" -- ${cur}) )
     return 0
   fi
