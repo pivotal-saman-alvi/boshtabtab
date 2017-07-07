@@ -56,6 +56,12 @@ __getDeployments() {
   return 0
 }
 
+__getErrands() {
+  json=$(bosh -e ${ENVIRONMENT} -d ${DEPLOYMENT} errands --json 2> /dev/null)
+  results=$(__getColumnValues "${json}" name 2> /dev/null)
+  echo ${results}
+  return 0
+}
 __getReleases() {
   results=$(bosh -e ${ENVIRONMENT} releases --column=name --column==version --json | jq -r '.Tables[0].Rows[] | .name+"/"+.version' 2> /dev/null)
   echo ${results}
@@ -178,8 +184,10 @@ function _boshness() {
 	  (${prev} == update-cpi-config) ]]; then
     COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
     return 0
+  elif [[ (${prev} == run-errand) ]]; then
+    COMPREPLY=( $(compgen -W "`__getErrands`" -- ${cur}) )
+    return 0
   elif [[ (${prev} == delete-release) ]]; then
-
     COMPREPLY=( $(compgen -W "`__getReleases`" -- ${cur}) )
     return 0
   elif [[ (${prev} == ssh) || \
