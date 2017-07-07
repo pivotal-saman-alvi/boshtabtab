@@ -13,6 +13,10 @@ __getIndexInCurrentWords() {
   return 1
 }
 
+__getYMLFiles() {
+  echo $(find * -type f -name "*.yml" 2> /dev/null)
+  return 0
+}
 __getValueSetInKeyVal() {
   WORD=$1
   for i in "${!COMP_WORDS[@]}"; do
@@ -181,8 +185,10 @@ function _boshness() {
     return 0
   elif [[ (${prev} == update-cloud-config) || \
 	  (${prev} == update-runtime-config) || \
-	  (${prev} == update-cpi-config) ]]; then
-    COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
+	  (${prev} == update-cpi-config) || \
+	  (${prev} == create-env) || \
+	  (${prev} == interpolate) ]]; then
+    COMPREPLY=( $(compgen -W "`__getYMLFiles`" -- ${cur}) )
     return 0
   elif [[ (${prev} == run-errand) ]]; then
     COMPREPLY=( $(compgen -W "`__getErrands`" -- ${cur}) )
