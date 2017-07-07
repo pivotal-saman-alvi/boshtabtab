@@ -196,6 +196,7 @@ function _boshness() {
 	  (${prev} == update-runtime-config) || \
 	  (${prev} == update-cpi-config) || \
 	  (${prev} == create-env) || \
+	  (${prev} == delete-env) || \
 	  (${prev} == interpolate) ]]; then
     COMPREPLY=( $(compgen -W "`__getYMLFiles`" -- ${cur}) )
     return 0
