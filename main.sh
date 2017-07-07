@@ -78,6 +78,12 @@ __getReleases() {
   return 0
 }
 
+__getStemcells() {
+  results=$(bosh -e ${ENVIRONMENT} stemcells --column=name --column==version --json | jq -r '.Tables[0].Rows[] | .name+"/"+.version' 2> /dev/null)
+  echo ${results}
+  return 0
+}
+
 __getDeployment() {
   depFlagIndex=$(__getIndexInCurrentWords "-d")
   deploymentFlag=$(__getValueSetInKeyVal "--deployment=")
@@ -206,11 +212,14 @@ function _boshness() {
   elif [[ (${prev} == delete-release) ]]; then
     COMPREPLY=( $(compgen -W "`__getReleases`" -- ${cur}) )
     return 0
+  elif [[ (${prev} == delete-stemcell) ]]; then
+    COMPREPLY=( $(compgen -W "`__getStemcells`" -- ${cur}) )
+    return 0
   elif [[ (${prev} == ssh) || \
 	  (${prev} == start) || \
 	  (${prev} == stop) || \
-	  (${prev} == unignore) || \
-	  (${prev} == ignore) ]]; then
+	  (${prev} == ignore) || \
+	  (${prev} == unignore) ]]; then
     COMPREPLY=( $(compgen -W "`__getVMs`" -- ${cur}) )
     return 0
   fi
