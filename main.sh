@@ -9,14 +9,13 @@ __getEnvs() {
 __getColumnValues() {
   json=$1
   colname=$2
-  results=$(echo ${json} | jq .Tables[0].Rows[].${colname} 2> /dev/null)
+  results=$(echo ${json} | jq -r .Tables[0].Rows[].${colname} 2> /dev/null)
   echo ${results}
   return 0
 }
 
 __getDeployments() {
-  environment=$(__getEnvironment)
-  json=$(bosh -e ${environment} deployments --json 2> /dev/null)
+  json=$(bosh -e ${ENVIRONMENT} deployments --json 2> /dev/null)
   results=$(__getColumnValues "${json}" name 2> /dev/null)
   echo ${results}
   return 0
@@ -43,11 +42,12 @@ __allDirs() {
   return 0
 }
 
-# __getVMs() {
-#   # TODO set this as output of getDeployment
-#   bosh_deployment=$BOSH_DEPLOYMENT
-#   results=`eval "bosh vms -d ${bosh_deployment}" 
-# }
+__getVMs() {
+  json=$(bosh vms -e ${ENVIRONMENT} -d ${DEPLOYMENT} --column=instance --json 2> /dev/null)
+  results=$(__getColumnValues "${json}" instance 2> /dev/null)
+  echo ${results}
+  return 0
+}
 
 function _boshness() {
   local main_options="-xx -e add-blob alias-env attach-disk back-up blobs cancel-task clean-up cloud-check 
@@ -68,6 +68,8 @@ function _boshness() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
+  DEPLOYMENT=$(__getDeployment)
+  ENVIRONMENT=$(__getEnvironment)
   if [[ ${prev} == bosh ]]; then
     if [[ ${cur} == * ]] ; then
       COMPREPLY=( $(compgen -W "${main_options[@]} ${all_options[@]}" -- ${cur}) )
@@ -95,6 +97,11 @@ function _boshness() {
 	  (${prev} == update-runtime-config) || \
 	  (${prev} == update-cpi-config) ]]; then
 		COMPREPLY=( $(compgen -W "`__allFiles`" -- ${cur}) )
+    return 0
+  elif [[ (${prev} == ssh) || \
+	  (${prev} == start) || \
+	  (${prev} == stop) ]]; then
+		COMPREPLY=( $(compgen -W "`__getVMs`" -- ${cur}) )
     return 0
   fi
 }
